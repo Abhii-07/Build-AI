@@ -63,7 +63,7 @@ export function Builder() {
                 name: currentFolderName,
                 type: 'file',
                 path: currentFolder,
-                content: step.code
+                content: step.code,
               })
             } else {
               file.content = step.code;
@@ -77,7 +77,7 @@ export function Builder() {
                 name: currentFolderName,
                 type: 'folder',
                 path: currentFolder,
-                children: []
+                children: [],
               })
             }
   
@@ -95,7 +95,7 @@ export function Builder() {
       setSteps(steps => steps.map((s: Step) => {
         return {
           ...s,
-          status: "completed"
+          status: "completed",
         }
         
       }))
@@ -113,22 +113,22 @@ export function Builder() {
           mountStructure[file.name] = {
             directory: file.children ? 
               Object.fromEntries(
-                file.children.map(child => [child.name, processFile(child, false)])
+                file.children.map(child => [child.name, processFile(child, false)]),
               ) 
-              : {}
+              : {},
           };
         } else if (file.type === 'file') {
           if (isRootFolder) {
             mountStructure[file.name] = {
               file: {
-                contents: file.content || ''
+                contents: file.content || '',
               }
             };
           } else {
             // For files, create a file entry with contents
             return {
               file: {
-                contents: file.content || ''
+                contents: file.content || '',
               }
             };
           }
@@ -152,7 +152,7 @@ export function Builder() {
 
   async function init() {
     const response = await axios.post(`${BACKEND_URL}/template`, {
-      prompt: prompt.trim()
+      prompt: prompt.trim(),
     });
     setTemplateSet(true);
     
@@ -160,27 +160,27 @@ export function Builder() {
 
     setSteps(parseXml(uiPrompts[0]).map((x: Step) => ({
       ...x,
-      status: "pending"
+      status: "pending",
     })));
 
     setLoading(true);
     const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
       messages: [...prompts, prompt].map(content => ({
         role: "user",
-        content
-      }))
+        content,
+      })),
     })
 
     setLoading(false);
 
     setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
       ...x,
-      status: "pending" as "pending"
+      status: "pending" as "pending",
     }))]);
 
     setLlmMessages([...prompts, prompt].map(content => ({
       role: "user",
-      content
+      content,
     })));
 
     setLlmMessages(x => [...x, {role: "assistant", content: stepsResponse.data.response}])
@@ -219,24 +219,24 @@ export function Builder() {
                   <button onClick={async () => {
                     const newMessage = {
                       role: "user" as "user",
-                      content: userPrompt
+                      content: userPrompt,
                     };
 
                     setLoading(true);
                     const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
-                      messages: [...llmMessages, newMessage]
+                      messages: [...llmMessages, newMessage],
                     });
                     setLoading(false);
 
                     setLlmMessages(x => [...x, newMessage]);
                     setLlmMessages(x => [...x, {
                       role: "assistant",
-                      content: stepsResponse.data.response
+                      content: stepsResponse.data.response,
                     }]);
                     
                     setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
                       ...x,
-                      status: "pending" as "pending"
+                      status: "pending" as "pending",
                     }))]);
 
                   }} className='bg-purple-400 px-4'>Send</button>

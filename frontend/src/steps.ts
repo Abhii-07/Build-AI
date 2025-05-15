@@ -50,7 +50,7 @@ export function parseXml(response: string): Step[] {
       title: artifactTitle,
       description: '',
       type: StepType.CreateFolder,
-      status: 'pending'
+      status: 'pending',
     });
   
     // Regular expression to find boltAction elements
@@ -69,7 +69,7 @@ export function parseXml(response: string): Step[] {
           type: StepType.CreateFile,
           status: 'pending',
           code: content.trim(),
-          path: filePath
+          path: filePath,
         });
       } else if (type === 'shell') {
         // Shell command step
@@ -79,7 +79,7 @@ export function parseXml(response: string): Step[] {
           description: '',
           type: StepType.RunScript,
           status: 'pending',
-          code: content.trim()
+          code: content.trim(),
         });
       }
     }
