@@ -16,7 +16,7 @@ export function PreviewFrame({ files, webContainer }: PreviewFrameProps) {
     installProcess.output.pipeTo(new WritableStream({
       write(data) {
         console.log(data);
-      }
+      },
     }));
 
     await webContainer.spawn('npm', ['run', 'dev']);

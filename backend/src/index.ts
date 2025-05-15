@@ -17,18 +17,18 @@ app.post("/template", async (req, res) => {
     
     const response = await anthropic.messages.create({
         messages: [{
-            role: 'user', content: prompt
+            role: 'user', content: prompt,
         }],
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 200,
-        system: "Return either node or react based on what do you think this project should be. Only return a single word either 'node' or 'react'. Do not return anything extra"
+        system: "Return either node or react based on what do you think this project should be. Only return a single word either 'node' or 'react'. Do not return anything extra",
     })
 
     const answer = (response.content[0] as TextBlock).text; // react or node
     if (answer == "react") {
         res.json({
             prompts: [BASE_PROMPT, `Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${reactBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
-            uiPrompts: [reactBasePrompt]
+            uiPrompts: [reactBasePrompt],
         })
         return;
     }
@@ -36,7 +36,7 @@ app.post("/template", async (req, res) => {
     if (answer === "node") {
         res.json({
             prompts: [`Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${reactBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
-            uiPrompts: [nodeBasePrompt]
+            uiPrompts: [nodeBasePrompt],
         })
         return;
     }
@@ -52,13 +52,13 @@ app.post("/chat", async (req, res) => {
         messages: messages,
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 8000,
-        system: getSystemPrompt()
+        system: getSystemPrompt(),
     })
 
     console.log(response);
 
     res.json({
-        response: (response.content[0] as TextBlock)?.text
+        response: (response.content[0] as TextBlock)?.text,
     });
 })
 
