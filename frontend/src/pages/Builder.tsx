@@ -12,6 +12,7 @@ import { parseXml } from '../steps';
 import { useWebContainer } from '../hooks/useWebContainer';
 import { FileNode } from '@webcontainer/api';
 import { Loader } from '../components/Loader';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 
 const MOCK_FILE_CONTENT = `// This is a sample file content
 import React from 'react';
@@ -39,6 +40,9 @@ export function Builder() {
 
   const [files, setFiles] = useState<FileItem[]>([]);
 
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [previewFullscreen, setPreviewFullscreen] = useState(false);
+
   useEffect(() => {
     let originalFiles = [...files];
     let updateHappened = false;
@@ -47,17 +51,17 @@ export function Builder() {
       if (step?.type === StepType.CreateFile) {
         let parsedPath = step.path?.split("/") ?? []; // ["src", "components", "App.tsx"]
         let currentFileStructure = [...originalFiles]; // {}
-        let finalAnswerRef = currentFileStructure;
+        const finalAnswerRef = currentFileStructure;
   
         let currentFolder = ""
         while(parsedPath.length) {
           currentFolder =  `${currentFolder}/${parsedPath[0]}`;
-          let currentFolderName = parsedPath[0];
+          const currentFolderName = parsedPath[0];
           parsedPath = parsedPath.slice(1);
   
           if (!parsedPath.length) {
             // final file
-            let file = currentFileStructure.find(x => x.path === currentFolder)
+            const file = currentFileStructure.find(x => x.path === currentFolder)
             if (!file) {
               currentFileStructure.push({
                 name: currentFolderName,
@@ -70,7 +74,7 @@ export function Builder() {
             }
           } else {
             /// in a folder
-            let folder = currentFileStructure.find(x => x.path === currentFolder)
+            const folder = currentFileStructure.find(x => x.path === currentFolder)
             if (!folder) {
               // create the folder
               currentFileStructure.push({
@@ -175,7 +179,7 @@ export function Builder() {
 
     setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
       ...x,
-      status: "pending" as "pending"
+      status: "pending" as const
     }))]);
 
     setLlmMessages([...prompts, prompt].map(content => ({
@@ -191,77 +195,113 @@ export function Builder() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-        <h1 className="text-xl font-semibold text-gray-100">Website Builder</h1>
-        <p className="text-sm text-gray-400 mt-1">Prompt: {prompt}</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-gray-900 to-black flex flex-col">
+      {/* Gradient Header with Logo/Title */}
+      <header className="bg-gradient-to-r from-blue-800 to-gray-900 px-8 py-4 flex items-center justify-between shadow-lg">
+        <div className="flex items-center space-x-4">
+          <span className="text-2xl font-bold text-white tracking-wide">Build AI</span>
+          <span className="text-lg text-gray-300 font-light pl-4 border-l border-gray-700">Website Builder</span>
+        </div>
+        <div className="text-sm text-gray-400 font-mono">Prompt: {prompt}</div>
       </header>
-      
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full grid grid-cols-4 gap-6 p-6">
-          <div className="col-span-1 space-y-6 overflow-auto">
-            <div>
-              <div className="max-h-[75vh] overflow-scroll">
+      {/* Main Content Layout */}
+      <div className="flex-1 flex justify-center items-start py-10 px-4">
+        {/* Sidebar */}
+        <aside className={`transition-all duration-300 ${sidebarCollapsed ? 'w-16 min-w-[4rem] p-2' : 'w-80 max-w-xs p-6'} bg-gray-900/80 rounded-2xl shadow-xl mr-8 mt-2 flex flex-col min-h-[70vh]`}>
+          <button
+            className="mb-4 self-end text-gray-400 hover:text-white transition"
+            onClick={() => setSidebarCollapsed((c) => !c)}
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? <ChevronRight size={24} /> : <ChevronLeft size={24} />}
+          </button>
+          {!sidebarCollapsed && (
+            <>
+              <h2 className="text-xl font-semibold text-white mb-4">Steps</h2>
+              <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
                 <StepsList
                   steps={steps}
                   currentStep={currentStep}
                   onStepClick={setCurrentStep}
                 />
               </div>
-              <div>
-                <div className='flex'>
-                  <br />
-                  {(loading || !templateSet) && <Loader />}
-                  {!(loading || !templateSet) && <div className='flex'>
+              <div className="mt-6">
+                {(loading || !templateSet) && <Loader />}
+                {!(loading || !templateSet) && (
+                  <div className="flex flex-col space-y-2">
                     <textarea value={userPrompt} onChange={(e) => {
-                    setPrompt(e.target.value)
-                  }} className='p-2 w-full'></textarea>
-                  <button onClick={async () => {
-                    const newMessage = {
-                      role: "user" as "user",
-                      content: userPrompt
-                    };
+                      setPrompt(e.target.value)
+                    }} className="p-2 w-full rounded bg-gray-800 text-gray-100 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" rows={2} placeholder="Send a prompt..." />
+                    <button onClick={async () => {
+                      const newMessage: { role: "user"; content: string } = {
+                        role: "user",
+                        content: userPrompt
+                      };
 
-                    setLoading(true);
-                    const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
-                      messages: [...llmMessages, newMessage]
-                    });
-                    setLoading(false);
+                      setLoading(true);
+                      const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
+                        messages: [...llmMessages, newMessage]
+                      });
+                      setLoading(false);
 
-                    setLlmMessages(x => [...x, newMessage]);
-                    setLlmMessages(x => [...x, {
-                      role: "assistant",
-                      content: stepsResponse.data.response
-                    }]);
-                    
-                    setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
-                      ...x,
-                      status: "pending" as "pending"
-                    }))]);
-
-                  }} className='bg-purple-400 px-4'>Send</button>
-                  </div>}
+                      setLlmMessages(x => [...x, newMessage]);
+                      setLlmMessages(x => [...x, {
+                        role: "assistant",
+                        content: stepsResponse.data.response
+                      }]);
+                      
+                      setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
+                        ...x,
+                        status: "pending" as const
+                      }))]);
+                    }} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded px-4 py-1 transition-colors">Send</button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </aside>
+        {/* Main Card */}
+        <main className={`flex-1 max-w-5xl bg-gray-900/90 rounded-2xl shadow-2xl p-8 flex flex-col min-h-[70vh] transition-all duration-300 ${previewFullscreen ? 'items-center justify-center' : ''}`}>
+          <div className={`flex flex-row h-full gap-6 ${previewFullscreen ? 'w-full' : ''}`}>
+            {/* File Explorer */}
+            {!previewFullscreen && (
+              <section className="w-64 bg-gray-800/80 rounded-xl shadow-md p-4 flex flex-col">
+                <h3 className="text-lg font-semibold text-gray-200 mb-2">Files</h3>
+                <FileExplorer 
+                  files={files} 
+                  onFileSelect={setSelectedFile}
+                />
+              </section>
+            )}
+            {/* Code/Preview Tabs */}
+            <section className={`flex-1 flex flex-col bg-gray-900 rounded-xl shadow-md p-4 ${previewFullscreen ? 'w-full h-[70vh]' : ''}`}>
+              <div className="flex items-center mb-2">
+                {!previewFullscreen && (
+                  <TabView activeTab={activeTab} onTabChange={setActiveTab} />
+                )}
+                <div className="ml-auto flex items-center gap-2">
+                  {activeTab === 'preview' && (
+                    <button
+                      className="text-gray-400 hover:text-white transition p-1"
+                      onClick={() => setPreviewFullscreen(f => !f)}
+                      aria-label={previewFullscreen ? 'Exit full screen' : 'Full screen preview'}
+                    >
+                      {previewFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                    </button>
+                  )}
                 </div>
               </div>
-            </div>
+              <div className={`h-[calc(100%-3rem)] mt-2 ${previewFullscreen ? 'flex items-center justify-center' : ''}`}>
+                {activeTab === 'code' && !previewFullscreen ? (
+                  <CodeEditor file={selectedFile} />
+                ) : (activeTab === 'preview' || previewFullscreen) && webcontainer ? (
+                  <PreviewFrame webContainer={webcontainer} files={files} />
+                ) : null}
+              </div>
+            </section>
           </div>
-          <div className="col-span-1">
-              <FileExplorer 
-                files={files} 
-                onFileSelect={setSelectedFile}
-              />
-            </div>
-          <div className="col-span-2 bg-gray-900 rounded-lg shadow-lg p-4 h-[calc(100vh-8rem)]">
-            <TabView activeTab={activeTab} onTabChange={setActiveTab} />
-            <div className="h-[calc(100%-4rem)]">
-              {activeTab === 'code' ? (
-                <CodeEditor file={selectedFile} />
-              ) : (
-                <PreviewFrame webContainer={webcontainer} files={files} />
-              )}
-            </div>
-          </div>
-        </div>
+        </main>
       </div>
     </div>
   );
