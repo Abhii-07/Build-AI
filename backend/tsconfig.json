@@ -8,7 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "types": ["node", "express", "cors"]
+    "types": ["node"]
   },
   "include": ["src"]
 }
