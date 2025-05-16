@@ -12,7 +12,7 @@ import { parseXml } from '../steps';
 import { useWebContainer } from '../hooks/useWebContainer';
 import { FileNode } from '@webcontainer/api';
 import { Loader } from '../components/Loader';
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2, ExternalLink } from 'lucide-react';
 
 const MOCK_FILE_CONTENT = `// This is a sample file content
 import React from 'react';
@@ -42,6 +42,7 @@ export function Builder() {
 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [previewFullscreen, setPreviewFullscreen] = useState(false);
+  const mainCardRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let originalFiles = [...files];
@@ -194,6 +195,14 @@ export function Builder() {
     init();
   }, [])
 
+  // Helper to open preview in new tab
+  const handleOpenPreviewNewTab = () => {
+    // This assumes PreviewFrame renders an iframe or can be rendered in a new window
+    // For now, just open the preview route in a new tab (customize as needed)
+    // You may want to pass state or use a dedicated preview URL
+    window.open(window.location.href + '#preview', '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-gray-900 to-black flex flex-col">
       {/* Gradient Header with Logo/Title */}
@@ -207,63 +216,73 @@ export function Builder() {
       {/* Main Content Layout */}
       <div className="flex-1 flex justify-center items-start py-10 px-4">
         {/* Sidebar */}
-        <aside className={`transition-all duration-300 ${sidebarCollapsed ? 'w-16 min-w-[4rem] p-2' : 'w-80 max-w-xs p-6'} bg-gray-900/80 rounded-2xl shadow-xl mr-8 mt-2 flex flex-col min-h-[70vh]`}>
-          <button
-            className="mb-4 self-end text-gray-400 hover:text-white transition"
-            onClick={() => setSidebarCollapsed((c) => !c)}
-            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {sidebarCollapsed ? <ChevronRight size={24} /> : <ChevronLeft size={24} />}
-          </button>
-          {!sidebarCollapsed && (
-            <>
-              <h2 className="text-xl font-semibold text-white mb-4">Steps</h2>
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-                <StepsList
-                  steps={steps}
-                  currentStep={currentStep}
-                  onStepClick={setCurrentStep}
-                />
-              </div>
-              <div className="mt-6">
-                {(loading || !templateSet) && <Loader />}
-                {!(loading || !templateSet) && (
-                  <div className="flex flex-col space-y-2">
-                    <textarea value={userPrompt} onChange={(e) => {
-                      setPrompt(e.target.value)
-                    }} className="p-2 w-full rounded bg-gray-800 text-gray-100 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" rows={2} placeholder="Send a prompt..." />
-                    <button onClick={async () => {
-                      const newMessage: { role: "user"; content: string } = {
-                        role: "user",
-                        content: userPrompt
-                      };
+        <aside
+          className={`transition-all duration-300 h-full ${sidebarCollapsed ? 'w-16 min-w-[4rem] p-0 flex flex-col items-center justify-center' : 'w-80 max-w-xs p-6'} bg-gray-900/80 rounded-2xl shadow-xl mr-8 mt-2 min-h-[70vh] flex-shrink-0`}
+          style={{ height: 'auto' }}
+        >
+          <div className={`flex flex-col ${sidebarCollapsed ? 'h-full justify-center' : ''}`} style={{ height: '100%' }}>
+            <button
+              className={`transition mb-4 ${sidebarCollapsed ? 'mt-0 self-center' : 'self-end'} text-gray-400 hover:text-white`}
+              onClick={() => setSidebarCollapsed((c) => !c)}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              style={sidebarCollapsed ? { marginTop: 'auto', marginBottom: 'auto' } : {}}
+            >
+              {sidebarCollapsed ? <ChevronRight size={28} /> : <ChevronLeft size={28} />}
+            </button>
+            {!sidebarCollapsed && (
+              <>
+                <h2 className="text-xl font-semibold text-white mb-4">Steps</h2>
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
+                  <StepsList
+                    steps={steps}
+                    currentStep={currentStep}
+                    onStepClick={setCurrentStep}
+                  />
+                </div>
+                <div className="mt-6">
+                  {(loading || !templateSet) && <Loader />}
+                  {!(loading || !templateSet) && (
+                    <div className="flex flex-col space-y-2">
+                      <textarea value={userPrompt} onChange={(e) => {
+                        setPrompt(e.target.value)
+                      }} className="p-2 w-full rounded bg-gray-800 text-gray-100 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" rows={2} placeholder="Send a prompt..." />
+                      <button onClick={async () => {
+                        const newMessage: { role: "user"; content: string } = {
+                          role: "user",
+                          content: userPrompt
+                        };
 
-                      setLoading(true);
-                      const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
-                        messages: [...llmMessages, newMessage]
-                      });
-                      setLoading(false);
+                        setLoading(true);
+                        const stepsResponse = await axios.post(`${BACKEND_URL}/chat`, {
+                          messages: [...llmMessages, newMessage]
+                        });
+                        setLoading(false);
 
-                      setLlmMessages(x => [...x, newMessage]);
-                      setLlmMessages(x => [...x, {
-                        role: "assistant",
-                        content: stepsResponse.data.response
-                      }]);
-                      
-                      setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
-                        ...x,
-                        status: "pending" as const
-                      }))]);
-                    }} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded px-4 py-1 transition-colors">Send</button>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
+                        setLlmMessages(x => [...x, newMessage]);
+                        setLlmMessages(x => [...x, {
+                          role: "assistant",
+                          content: stepsResponse.data.response
+                        }]);
+                        
+                        setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
+                          ...x,
+                          status: "pending" as const
+                        }))]);
+                      }} className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded px-4 py-1 transition-colors">Send</button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
         </aside>
         {/* Main Card */}
-        <main className={`flex-1 max-w-5xl bg-gray-900/90 rounded-2xl shadow-2xl p-8 flex flex-col min-h-[70vh] transition-all duration-300 ${previewFullscreen ? 'items-center justify-center' : ''}`}>
-          <div className={`flex flex-row h-full gap-6 ${previewFullscreen ? 'w-full' : ''}`}>
+        <main
+          ref={mainCardRef}
+          className={`flex-1 max-w-5xl bg-gray-900/90 rounded-2xl shadow-2xl flex flex-col min-h-[70vh] transition-all duration-300 ${previewFullscreen ? 'items-center justify-center p-0' : 'p-8'}`}
+          style={{ height: 'auto' }}
+        >
+          <div className={`flex flex-row h-full gap-6 ${previewFullscreen ? 'w-full' : ''}`} style={{ minHeight: '70vh', height: '100%' }}>
             {/* File Explorer */}
             {!previewFullscreen && (
               <section className="w-64 bg-gray-800/80 rounded-xl shadow-md p-4 flex flex-col">
@@ -275,24 +294,33 @@ export function Builder() {
               </section>
             )}
             {/* Code/Preview Tabs */}
-            <section className={`flex-1 flex flex-col bg-gray-900 rounded-xl shadow-md p-4 ${previewFullscreen ? 'w-full h-[70vh]' : ''}`}>
+            <section className={`flex-1 flex flex-col bg-gray-900 rounded-xl shadow-md ${previewFullscreen ? 'w-full h-full p-0' : 'p-4'}`} style={previewFullscreen ? { minHeight: '70vh', height: '100%' } : {}}>
               <div className="flex items-center mb-2">
                 {!previewFullscreen && (
                   <TabView activeTab={activeTab} onTabChange={setActiveTab} />
                 )}
                 <div className="ml-auto flex items-center gap-2">
                   {activeTab === 'preview' && (
-                    <button
-                      className="text-gray-400 hover:text-white transition p-1"
-                      onClick={() => setPreviewFullscreen(f => !f)}
-                      aria-label={previewFullscreen ? 'Exit full screen' : 'Full screen preview'}
-                    >
-                      {previewFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
-                    </button>
+                    <>
+                      <button
+                        className="text-gray-400 hover:text-white transition p-1"
+                        onClick={() => setPreviewFullscreen(f => !f)}
+                        aria-label={previewFullscreen ? 'Exit full screen' : 'Full screen preview'}
+                      >
+                        {previewFullscreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                      </button>
+                      <button
+                        className="text-gray-400 hover:text-white transition p-1"
+                        onClick={handleOpenPreviewNewTab}
+                        aria-label="Open preview in new tab"
+                      >
+                        <ExternalLink size={20} />
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
-              <div className={`h-[calc(100%-3rem)] mt-2 ${previewFullscreen ? 'flex items-center justify-center' : ''}`}>
+              <div className={`h-[calc(100%-3rem)] mt-2 ${previewFullscreen ? 'flex items-center justify-center' : ''}`} style={previewFullscreen ? { height: '100%' } : {}}>
                 {activeTab === 'code' && !previewFullscreen ? (
                   <CodeEditor file={selectedFile} />
                 ) : (activeTab === 'preview' || previewFullscreen) && webcontainer ? (

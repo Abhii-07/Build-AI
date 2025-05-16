@@ -12,6 +12,17 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Health check endpoint
+app.get("/check", (req, res) => {
+  const timestamp = new Date().toISOString();
+  console.log(`[${timestamp}] Health check requested - Status: OK`);
+  res.json({
+    status: "ok",
+    timestamp,
+    message: "Server is running and healthy",
+  });
+});
+
 app.post("/template", async (req, res) => {
   const prompt = req.body.prompt;
 
