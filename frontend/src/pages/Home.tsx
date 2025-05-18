@@ -1,18 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Bot } from 'lucide-react';
+import { Bot, X } from 'lucide-react';
 
 export function Home() {
   const [prompt, setPrompt] = useState('');
-  const navigate = useNavigate();
+  const [showPopup, setShowPopup] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
-    console.log('handleSubmit method started');
     e.preventDefault();
     if (prompt.trim()) {
-      navigate('/builder', { state: { prompt } });
+      setShowPopup(true);
     }
-    console.log('handleSubmit method ended');
   };
 
   return (
@@ -62,6 +59,30 @@ export function Home() {
       <footer className="w-full border-t border-white/10 py-6 text-center text-sm text-gray-500 bg-transparent">
         <span className="font-semibold text-white">Build AI</span> &middot; {new Date().getFullYear()} &middot; All rights reserved.
       </footer>
+
+      {/* Popup */}
+      {showPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-6 max-w-md w-full mx-4 relative">
+            <button
+              onClick={() => setShowPopup(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold text-white mb-4">Oops!</h2>
+            <p className="text-gray-300 mb-6">
+              You have exhausted your API credits. Please contact the admin to recharge.
+            </p>
+            <button
+              onClick={() => setShowPopup(false)}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
